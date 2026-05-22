@@ -55,12 +55,9 @@ if len(content) > 2000:
     content = content[:2000] + '... [truncated]'
 print(json.dumps({
     'content': content,
+    'type': 'discovery',
     'tool': 'claude-code-subagent',
     'project': project,
-    'metadata': {
-        'source': 'subagent-stop-hook',
-        'passive_capture': True
-    }
 }))
 " "$subagent_output" "$PROJECT" 2>/dev/null || true)"
 

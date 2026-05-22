@@ -104,6 +104,22 @@ list_memories — browse recent memories
 Call store_memory IMMEDIATELY after ANY decision, bug fix, discovery, or convention — not just when asked.
 Always pass tool="claude-code" and project="${PROJECT}".
 
+**ALWAYS set `type`** — pick the closest match:
+- architecture — design decisions, patterns, system structure
+- bugfix — bug fixes (include root cause)
+- decision — explicit choices made (library, approach, tradeoff)
+- discovery — non-obvious findings, gotchas, edge cases
+- config — environment, tooling, infrastructure changes
+- pattern — naming conventions, code patterns, team standards
+- feedback — user corrections or confirmations of your approach
+- preference — user style or workflow preferences
+- session_summary — end-of-session summary
+- feature — completed feature implementations
+- refactoring — structural code changes without behavior change
+
+**Use `title`** — always provide a short (5-10 word) searchable title.
+**Use `topic_key`** for evolving topics — same key updates existing memory instead of creating a duplicate (e.g. "architecture/auth-model", "config/deploy-pipeline").
+
 ### WHEN TO SEARCH
 - User's first message references a feature or problem → search_memory with keywords
 - Starting work on something that might have been done before → search_memory
