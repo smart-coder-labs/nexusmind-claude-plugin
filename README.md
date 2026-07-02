@@ -17,6 +17,13 @@ Team memory for AI coding agents. Store decisions, bugs, and conventions — sha
 
 ## Install
 
+Choose **one** install path below — do not combine them. Options 1 and 2 both
+register the `nexusmind` MCP server at the user level (`~/.claude.json`).
+Option 3 (marketplace) auto-registers it via the plugin's own
+`plugin/.mcp.json` instead. Running a user-level `claude mcp add` on top of a
+marketplace install double-registers the server and roughly doubles the MCP
+tool-schema token cost on every session.
+
 ### Option 1 — one-liner
 
 ```bash
