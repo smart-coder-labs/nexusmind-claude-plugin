@@ -102,7 +102,7 @@ fi
 if [[ -n "$RECENT_BLOCK" ]]; then
   cat <<EOF
 
-### Recent Team Memories (last 10)
+### Recent Team Memories (last ${NEXUSMIND_SESSION_RECENT_LIMIT})
 ${RECENT_BLOCK}
 EOF
 fi
