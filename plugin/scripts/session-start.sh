@@ -57,6 +57,9 @@ except Exception:
 " "$1"
 }
 
+NEXUSMIND_SESSION_PROJECT_LIMIT="${NEXUSMIND_SESSION_PROJECT_LIMIT:-8}"
+NEXUSMIND_SESSION_RECENT_LIMIT="${NEXUSMIND_SESSION_RECENT_LIMIT:-5}"
+
 # Project-specific memories — filter by project, do NOT semantic-search the project name.
 # The project name is a filter parameter, not a search term; searching it returns
 # noise (token matches) and misses everything, so we list by project instead.
@@ -64,76 +67,28 @@ PROJECT_BLOCK=""
 PROJECT_ENC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
 PROJECT_JSON="$(curl -sf --max-time 8 \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
-  "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=15" 2>/dev/null || true)"
+  "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=${NEXUSMIND_SESSION_PROJECT_LIMIT}" 2>/dev/null || true)"
 if [[ -n "$PROJECT_JSON" ]]; then
-  PROJECT_BLOCK="$(echo "$PROJECT_JSON" | format_memories 15)"
+  PROJECT_BLOCK="$(echo "$PROJECT_JSON" | format_memories "${NEXUSMIND_SESSION_PROJECT_LIMIT}")"
 fi
 
 # Recency list
 RECENT_BLOCK=""
 RECENT_JSON="$(curl -sf --max-time 8 \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
-  "${NEXUSMIND_BASE_URL}/v1/memory?limit=15" 2>/dev/null || true)"
+  "${NEXUSMIND_BASE_URL}/v1/memory?limit=${NEXUSMIND_SESSION_RECENT_LIMIT}" 2>/dev/null || true)"
 if [[ -n "$RECENT_JSON" ]]; then
-  RECENT_BLOCK="$(echo "$RECENT_JSON" | format_memories 10)"
+  RECENT_BLOCK="$(echo "$RECENT_JSON" | format_memories "${NEXUSMIND_SESSION_RECENT_LIMIT}")"
 fi
 
-# Full protocol body
+# Minimal protocol pointer — full detail lives in the nexusmind-memory skill.
 cat <<PROTOCOL
-## NexusMind — ACTIVE PROTOCOL (project: ${PROJECT})
+## NexusMind — Memory Protocol (project: ${PROJECT})
 
-NexusMind is the single source of truth for this codebase. Before guessing, check it. Before finishing, save to it.
-
-### Tools available
-store_memory — save decisions, bugs, discoveries, conventions PROACTIVELY (do not wait to be asked)
-search_memory — SEMANTIC search by topic (e.g. "how auth handles token refresh"). Pass the project via the project filter, NOT as the query. NEVER search the project name itself.
-list_memories — list a project's memories (use the project filter); the right tool for "show me this project's context"
-get_context — bootstrap a significant session with a project's accumulated context
-get_memory — full untruncated content by id (previews are not enough)
-delete_memory — only when the user explicitly asks; requires confirm: true
-
-### PROACTIVE SAVE RULE
-Call store_memory IMMEDIATELY after ANY decision, bug fix, discovery, or convention — not just when asked.
-Always pass tool="claude-code" and project="${PROJECT}".
-
-ALWAYS set \`type\` — pick the closest match:
-- architecture — design decisions, patterns, system structure
-- bugfix — bug fixes (include root cause)
-- decision — explicit choices made (library, approach, tradeoff)
-- discovery — non-obvious findings, gotchas, edge cases
-- config — environment, tooling, infrastructure changes
-- pattern — naming conventions, code patterns, team standards
-- feedback — user corrections or confirmations of your approach
-- preference — user style or workflow preferences
-- session_summary — end-of-session summary
-- feature — completed feature implementations
-- refactoring — structural code changes without behavior change
-
-ALWAYS provide \`title\` — short (5-10 word) searchable title.
-Use \`topic_key\` for evolving topics — same key updates existing memory instead of creating a duplicate.
-
-### WHEN TO SEARCH
-- User's FIRST message references a feature or problem → search_memory with a SEMANTIC query built from the topic (not the project name) BEFORE responding
-- Starting work on something that might have been done before → search_memory by topic
-- User asks to recall anything → search_memory by topic
-- About to make a non-trivial decision → search_memory first
-- Want this project's overall context → use get_context or list_memories with the project filter, NOT search_memory("${PROJECT}")
-
-RULE: the query is a semantic description of WHAT you're looking for. The project is already scoped by the project filter — never put the project name in the query.
-
-### SESSION CLOSE (MANDATORY)
-Before saying "done", call store_memory with type="session_summary":
-- What was accomplished
-- Key decisions and why
-- Files changed
-- Next steps
-
-This is NOT optional. If you skip this, the next session starts blind.
-
-### AFTER COMPACTION
-1. IMMEDIATELY call store_memory with type="session_summary" and the compacted content.
-2. Call get_context (or list_memories with the project filter) to recover this project's broader context — do NOT search_memory("${PROJECT}"); the project name is a filter, not a query.
-3. Only THEN continue working.
+Tools: store_memory, search_memory, list_memories, get_context, get_memory, delete_memory. Full protocol detail: nexusmind-memory skill.
+Proactively call store_memory right after any decision, bug fix, discovery, or convention — do not wait to be asked.
+Before starting work that may already have context, call search_memory or list_memories with project="${PROJECT}" as a FILTER — never as the search query text.
+Before ending the session, call store_memory with a type="session_summary" recap — mandatory, skipping it leaves the next session blind.
 PROTOCOL
 
 if [[ -n "$PROJECT_BLOCK" ]]; then
