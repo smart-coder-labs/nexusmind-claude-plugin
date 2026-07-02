@@ -24,6 +24,12 @@ Option 3 (marketplace) auto-registers it via the plugin's own
 marketplace install double-registers the server and roughly doubles the MCP
 tool-schema token cost on every session.
 
+Note: `install.sh` (used by Options 1 and 2) lives in the separate
+[`smart-coder-labs/nexus-mind`](https://github.com/smart-coder-labs/nexus-mind)
+repository, not in this repo. This repo's own tooling (Option 3, the
+marketplace install) does not detect or prevent a prior user-level
+registration — the warning above is manual guidance, not an automated guard.
+
 ### Option 1 — one-liner
 
 ```bash
@@ -59,9 +65,9 @@ export NEXUSMIND_API_KEY=your-key-here
 
 ## What gets installed
 
-The installer:
-1. Adds the `nexusmind` MCP server to `~/.claude/settings.json`
-2. Adds lifecycle hooks (SessionStart, UserPromptSubmit, SubagentStop, Stop)
+The installer (Options 1/2, from the `smart-coder-labs/nexus-mind` repo):
+1. Adds the `nexusmind` MCP server to `~/.claude.json` (user scope)
+2. Adds lifecycle hooks (SessionStart, UserPromptSubmit, SubagentStop, Stop) to `~/.claude/settings.json`
 3. Writes `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` to `~/.bashrc` and `~/.zshrc`
 
 ## MCP Tools
@@ -74,5 +80,6 @@ The installer:
 
 ## Uninstall
 
-Remove the `nexusmind` entry from `~/.claude/settings.json` under both `mcpServers` and `hooks`.
+Remove the `nexusmind` entry from `~/.claude.json` (`mcpServers`) and from
+`~/.claude/settings.json` (`hooks`).
 Remove the `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` exports from your shell profile.
