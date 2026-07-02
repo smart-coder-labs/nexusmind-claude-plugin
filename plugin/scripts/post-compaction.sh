@@ -71,7 +71,7 @@ try:
     data = json.load(sys.stdin)
     items = data if isinstance(data, list) else data.get('memories', data.get('items', data.get('data', [])))
     lines = []
-    for m in items[:${NEXUSMIND_SESSION_RECENT_LIMIT}]:
+    for m in items[:int(sys.argv[1])]:
         project = m.get('project', '') or m.get('metadata', {}).get('project', '')
         tool    = m.get('tool', '') or m.get('metadata', {}).get('tool', '')
         content = m.get('content', m.get('text', ''))
@@ -81,7 +81,7 @@ try:
     print('\n'.join(lines))
 except Exception:
     pass
-" 2>/dev/null || true)"
+" "${NEXUSMIND_SESSION_RECENT_LIMIT}" 2>/dev/null || true)"
 fi
 
 # ---------------------------------------------------------------------------
