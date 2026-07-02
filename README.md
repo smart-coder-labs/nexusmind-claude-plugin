@@ -17,37 +17,21 @@ Team memory for AI coding agents. Store decisions, bugs, and conventions — sha
 
 ## Install
 
-Choose **one** install path below — do not combine them. Options 1 and 2 both
-register the `nexusmind` MCP server at the user level (`~/.claude.json`).
-Option 3 (marketplace) auto-registers it via the plugin's own
-`plugin/.mcp.json` instead. Running a user-level `claude mcp add` on top of a
-marketplace install double-registers the server and roughly doubles the MCP
-tool-schema token cost on every session.
-
-Note: `install.sh` (used by Options 1 and 2) lives in the separate
-[`smart-coder-labs/nexus-mind`](https://github.com/smart-coder-labs/nexus-mind)
-repository, not in this repo. This repo's own tooling (Option 3, the
-marketplace install) does not detect or prevent a prior user-level
-registration — the warning above is manual guidance, not an automated guard.
-
-### Option 1 — one-liner
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/smart-coder-labs/nexus-mind/main/plugin/claude-code/install.sh | bash
-```
-
-### Option 2 — clone and run
-
-```bash
-git clone https://github.com/smart-coder-labs/nexus-mind.git
-bash nexus-mind/plugin/claude-code/install.sh
-```
-
-### Option 3 — Claude plugin marketplace
-
 ```bash
 claude plugin marketplace add smart-coder-labs/nexus-mind
 claude plugin install nexusmind
+```
+
+The marketplace install is the only supported path. The plugin registers the
+`nexusmind` MCP server itself via its bundled `plugin/.mcp.json` — do **not**
+also run `claude mcp add nexusmind` (or the MCP package's `setup` for Claude
+Code). A user-level registration on top of the plugin double-registers the
+server and roughly doubles the MCP tool-schema token cost on every session.
+
+If you previously registered the server at the user level, remove it:
+
+```bash
+claude mcp remove nexusmind
 ```
 
 ## Configuration
@@ -65,21 +49,28 @@ export NEXUSMIND_API_KEY=your-key-here
 
 ## What gets installed
 
-The installer (Options 1/2, from the `smart-coder-labs/nexus-mind` repo):
-1. Adds the `nexusmind` MCP server to `~/.claude.json` (user scope)
-2. Adds lifecycle hooks (SessionStart, UserPromptSubmit, SubagentStop, Stop) to `~/.claude/settings.json`
-3. Writes `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` to `~/.bashrc` and `~/.zshrc`
+The plugin bundles everything:
+1. The `nexusmind` MCP server, registered via the plugin's own `plugin/.mcp.json`
+2. Lifecycle hooks (SessionStart, UserPromptSubmit, SubagentStop, Stop)
+3. The `memory` skill with the full memory protocol
+
+The `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` environment variables are
+read from your shell environment — set them in your shell profile.
 
 ## MCP Tools
 
 | Tool | When to use |
 |------|-------------|
-| `store_memory` | Save a decision, bug fix, convention, or discovery |
-| `search_memory` | Look up past decisions or context |
-| `list_memories` | Browse recent team memories |
+| `store_memory` | Save a decision, bug fix, convention, or discovery (`auto_tag` for automatic classification) |
+| `search_memories` | Search or browse memories (with `query` = semantic search; without = filtered listing) |
+| `get_memory` | Fetch full untruncated content by id |
+| `get_context` | Bootstrap a session with project context (`mode: compact\|full`) |
 
 ## Uninstall
 
-Remove the `nexusmind` entry from `~/.claude.json` (`mcpServers`) and from
-`~/.claude/settings.json` (`hooks`).
+```bash
+claude plugin uninstall nexusmind
+```
+
 Remove the `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` exports from your shell profile.
+If you ever registered the server at the user level, also run `claude mcp remove nexusmind`.
