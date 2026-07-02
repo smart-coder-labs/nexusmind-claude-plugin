@@ -1,6 +1,6 @@
 ---
 name: nexusmind-memory
-description: NexusMind persistent team memory protocol — the single source of truth for recalling past work, saving decisions/conventions/bug fixes, and answering memory-protocol questions. Trigger: recalling past work or prior decisions, saving a decision/convention/bug fix/discovery, session start or post-compaction recovery, or any question about how the NexusMind memory protocol works.
+description: NexusMind persistent team memory protocol — the single source of truth for recalling past work, saving decisions/conventions/bug fixes, and answering memory-protocol questions. Triggers on recalling past work or prior decisions, saving a decision/convention/bug fix/discovery, session start or post-compaction recovery, or any question about how the NexusMind memory protocol works.
 ---
 
 # NexusMind Memory — Protocol
