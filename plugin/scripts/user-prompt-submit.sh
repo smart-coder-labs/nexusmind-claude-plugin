@@ -51,14 +51,14 @@ except Exception:
   if [[ -n "$PARSED" ]]; then RECENT_BLOCK="$PARSED"; fi
 fi
 
-# Section 2: last 5 project-specific memories (via search)
+# Section 2: last 5 project-specific memories — filter by project, do NOT
+# semantic-search the project name. This runs on every prompt; searching the
+# project name floods the audit log with noise and returns poor matches.
 PROJECT_BLOCK="(none)"
+PROJECT_ENC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
 PROJECT_JSON="$(curl -sf --max-time 5 \
-  -X POST \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\": \"${PROJECT}\", \"limit\": 5}" \
-  "${NEXUSMIND_BASE_URL}/v1/memory/search" 2>/dev/null || true)"
+  "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=5" 2>/dev/null || true)"
 if [[ -n "$PROJECT_JSON" ]]; then
   PARSED="$(echo "$PROJECT_JSON" | python3 -c "
 import sys, json
@@ -92,7 +92,7 @@ ${PROJECT_BLOCK}
 \`\`\`
 
 ### 3) MANDATORY behavioral rule
-MANDATORY: call \`search_memory\` with keywords from this message before responding if the message references existing work. Save any decision you make to NexusMind. Do not skip this.
+MANDATORY: if this message references existing work, call \`search_memory\` before responding with a SEMANTIC query describing the topic (never the project name — that goes in the project filter). Save any decision you make to NexusMind. Do not skip this.
 
 ### 4) Save reminder
 After completing any decision, bug fix, or non-obvious discovery, call \`store_memory\` BEFORE moving on.

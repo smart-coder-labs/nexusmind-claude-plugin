@@ -57,14 +57,14 @@ except Exception:
 " "$1"
 }
 
-# Project-specific search
+# Project-specific memories — filter by project, do NOT semantic-search the project name.
+# The project name is a filter parameter, not a search term; searching it returns
+# noise (token matches) and misses everything, so we list by project instead.
 PROJECT_BLOCK=""
+PROJECT_ENC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
 PROJECT_JSON="$(curl -sf --max-time 8 \
-  -X POST \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\": \"${PROJECT}\", \"limit\": 15}" \
-  "${NEXUSMIND_BASE_URL}/v1/memory/search" 2>/dev/null || true)"
+  "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=15" 2>/dev/null || true)"
 if [[ -n "$PROJECT_JSON" ]]; then
   PROJECT_BLOCK="$(echo "$PROJECT_JSON" | format_memories 15)"
 fi
@@ -86,9 +86,9 @@ NexusMind is the single source of truth for this codebase. Before guessing, chec
 
 ### Tools available
 store_memory — save decisions, bugs, discoveries, conventions PROACTIVELY (do not wait to be asked)
-search_memory — first action on any prompt that references prior work
-list_memories — utility browse
-get_context — bootstrap a significant session
+search_memory — SEMANTIC search by topic (e.g. "how auth handles token refresh"). Pass the project via the project filter, NOT as the query. NEVER search the project name itself.
+list_memories — list a project's memories (use the project filter); the right tool for "show me this project's context"
+get_context — bootstrap a significant session with a project's accumulated context
 get_memory — full untruncated content by id (previews are not enough)
 delete_memory — only when the user explicitly asks; requires confirm: true
 
@@ -113,10 +113,13 @@ ALWAYS provide \`title\` — short (5-10 word) searchable title.
 Use \`topic_key\` for evolving topics — same key updates existing memory instead of creating a duplicate.
 
 ### WHEN TO SEARCH
-- User's FIRST message references a feature or problem → search_memory with keywords BEFORE responding
-- Starting work on something that might have been done before → search_memory
-- User asks to recall anything → search_memory
+- User's FIRST message references a feature or problem → search_memory with a SEMANTIC query built from the topic (not the project name) BEFORE responding
+- Starting work on something that might have been done before → search_memory by topic
+- User asks to recall anything → search_memory by topic
 - About to make a non-trivial decision → search_memory first
+- Want this project's overall context → use get_context or list_memories with the project filter, NOT search_memory("${PROJECT}")
+
+RULE: the query is a semantic description of WHAT you're looking for. The project is already scoped by the project filter — never put the project name in the query.
 
 ### SESSION CLOSE (MANDATORY)
 Before saying "done", call store_memory with type="session_summary":
@@ -129,7 +132,7 @@ This is NOT optional. If you skip this, the next session starts blind.
 
 ### AFTER COMPACTION
 1. IMMEDIATELY call store_memory with type="session_summary" and the compacted content.
-2. Call search_memory(query: "${PROJECT}") to recover broader context.
+2. Call get_context (or list_memories with the project filter) to recover this project's broader context — do NOT search_memory("${PROJECT}"); the project name is a filter, not a query.
 3. Only THEN continue working.
 PROTOCOL
 
