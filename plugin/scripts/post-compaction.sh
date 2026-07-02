@@ -92,24 +92,26 @@ Context was compacted. You MUST recover state before continuing.
 
 **FIRST ACTION REQUIRED after compaction:**
 1. Call store_memory with a summary of what was being worked on before compaction
-2. Call search_memory to recover prior decisions and context
+2. Recover this project's context with get_context (or list_memories with the project filter) — NOT search_memory("${PROJECT}"). Use search_memory only for a specific topic you need, with a semantic query.
 3. Only then continue working
 
 **Project detected**: ${PROJECT}
 
 ### CORE TOOLS
 store_memory — save decisions, bugs, discoveries, conventions PROACTIVELY (do not wait to be asked)
-search_memory — find past decisions or context
-list_memories — browse recent memories
+search_memory — SEMANTIC search by topic (pass the project via the project filter, never as the query; never search the project name)
+list_memories — list a project's memories via the project filter
+get_context — recover a project's accumulated context
 
 ### PROACTIVE SAVE RULE
 Call store_memory IMMEDIATELY after ANY decision, bug fix, discovery, or convention — not just when asked.
 Always pass tool="claude-code" and project="${PROJECT}".
 
 ### WHEN TO SEARCH
-- User's first message references a feature or problem → search_memory with keywords
-- Starting work on something that might have been done before → search_memory
-- User asks to recall anything → search_memory
+- User's first message references a feature or problem → search_memory with a SEMANTIC query from the topic (not the project name)
+- Starting work on something that might have been done before → search_memory by topic
+- User asks to recall anything → search_memory by topic
+- Want the project's overall context → get_context / list_memories with the project filter, NOT search_memory("${PROJECT}")
 
 ### SESSION CLOSE (MANDATORY)
 Before saying "done", call store_memory with:
