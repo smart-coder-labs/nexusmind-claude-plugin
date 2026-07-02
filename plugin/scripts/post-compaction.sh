@@ -56,11 +56,13 @@ fi
 # ---------------------------------------------------------------------------
 # Fetch recent memories
 # ---------------------------------------------------------------------------
+NEXUSMIND_SESSION_RECENT_LIMIT="${NEXUSMIND_SESSION_RECENT_LIMIT:-5}"
+
 RECENT_MEMORIES=""
 MEMORIES_RESPONSE="$(curl -sf --max-time 10 \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
   -H "Content-Type: application/json" \
-  "${NEXUSMIND_BASE_URL}/v1/memory?limit=15" 2>/dev/null || true)"
+  "${NEXUSMIND_BASE_URL}/v1/memory?limit=${NEXUSMIND_SESSION_RECENT_LIMIT}" 2>/dev/null || true)"
 
 if [[ -n "$MEMORIES_RESPONSE" ]]; then
   RECENT_MEMORIES="$(echo "$MEMORIES_RESPONSE" | python3 -c "
@@ -69,7 +71,7 @@ try:
     data = json.load(sys.stdin)
     items = data if isinstance(data, list) else data.get('memories', data.get('items', data.get('data', [])))
     lines = []
-    for m in items[:10]:
+    for m in items[:${NEXUSMIND_SESSION_RECENT_LIMIT}]:
         project = m.get('project', '') or m.get('metadata', {}).get('project', '')
         tool    = m.get('tool', '') or m.get('metadata', {}).get('tool', '')
         content = m.get('content', m.get('text', ''))
@@ -86,41 +88,9 @@ fi
 # Output additionalContext with compaction-specific recovery instructions
 # ---------------------------------------------------------------------------
 cat <<PROTOCOL
-## NexusMind — ACTIVE PROTOCOL (post-compaction recovery)
+## NexusMind — Post-Compaction Recovery (project: ${PROJECT})
 
-Context was compacted. You MUST recover state before continuing.
-
-**FIRST ACTION REQUIRED after compaction:**
-1. Call store_memory with a summary of what was being worked on before compaction
-2. Recover this project's context with get_context (or list_memories with the project filter) — NOT search_memory("${PROJECT}"). Use search_memory only for a specific topic you need, with a semantic query.
-3. Only then continue working
-
-**Project detected**: ${PROJECT}
-
-### CORE TOOLS
-store_memory — save decisions, bugs, discoveries, conventions PROACTIVELY (do not wait to be asked)
-search_memory — SEMANTIC search by topic (pass the project via the project filter, never as the query; never search the project name)
-list_memories — list a project's memories via the project filter
-get_context — recover a project's accumulated context
-
-### PROACTIVE SAVE RULE
-Call store_memory IMMEDIATELY after ANY decision, bug fix, discovery, or convention — not just when asked.
-Always pass tool="claude-code" and project="${PROJECT}".
-
-### WHEN TO SEARCH
-- User's first message references a feature or problem → search_memory with a SEMANTIC query from the topic (not the project name)
-- Starting work on something that might have been done before → search_memory by topic
-- User asks to recall anything → search_memory by topic
-- Want the project's overall context → get_context / list_memories with the project filter, NOT search_memory("${PROJECT}")
-
-### SESSION CLOSE (MANDATORY)
-Before saying "done", call store_memory with:
-- What was accomplished
-- Key decisions and why
-- Files changed
-- Next steps
-
-This is NOT optional. If you skip this, the next session starts blind.
+Context was compacted. FIRST: call store_memory (type="session_summary") with what was in progress. THEN call get_context or list_memories with project="${PROJECT}" as a filter to recover history — never search_memory("${PROJECT}"). Full protocol: nexusmind-memory skill.
 PROTOCOL
 
 # ---------------------------------------------------------------------------
@@ -129,7 +99,7 @@ PROTOCOL
 if [[ -n "$RECENT_MEMORIES" ]]; then
   cat <<MEMORIES
 
-### Recent Team Memories (last 10)
+### Recent Team Memories (last ${NEXUSMIND_SESSION_RECENT_LIMIT})
 ${RECENT_MEMORIES}
 MEMORIES
 fi
