@@ -7,8 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./_helpers.sh
 source "${SCRIPT_DIR}/_helpers.sh"
 
+# Real python3/python/py may all be missing or Windows Store stubs; degrade
+# gracefully everywhere below rather than crashing under set -e.
+PYTHON_BIN="$(resolve_python || true)"
+
 INPUT="$(cat)"
-cwd="$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('cwd',''))" 2>/dev/null || true)"
+cwd="$(echo "$INPUT" | $PYTHON_BIN -c "import sys,json; d=json.load(sys.stdin); print(d.get('cwd',''))" 2>/dev/null || true)"
 
 NEXUSMIND_BASE_URL="${NEXUSMIND_BASE_URL:-https://nexusmind-backend.fly.dev}"
 
@@ -41,7 +45,13 @@ if [[ -n "$cwd" ]]; then
 fi
 
 format_memories() {
-  python3 -c "
+  # No working Python: drain stdin (avoid blocking the upstream writer) and
+  # emit nothing instead of aborting the whole hook.
+  if [[ -z "$PYTHON_BIN" ]]; then
+    cat >/dev/null 2>&1 || true
+    return 0
+  fi
+  $PYTHON_BIN -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -54,7 +64,7 @@ try:
     print('\n'.join(lines))
 except Exception:
     pass
-" "$1"
+" "$1" 2>/dev/null || true
 }
 
 NEXUSMIND_SESSION_PROJECT_LIMIT="${NEXUSMIND_SESSION_PROJECT_LIMIT:-8}"
@@ -64,12 +74,12 @@ NEXUSMIND_SESSION_RECENT_LIMIT="${NEXUSMIND_SESSION_RECENT_LIMIT:-5}"
 # The project name is a filter parameter, not a search term; searching it returns
 # noise (token matches) and misses everything, so we list by project instead.
 PROJECT_BLOCK=""
-PROJECT_ENC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
+PROJECT_ENC="$($PYTHON_BIN -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
 PROJECT_JSON="$(curl -sf --max-time 8 \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
   "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=${NEXUSMIND_SESSION_PROJECT_LIMIT}" 2>/dev/null || true)"
 if [[ -n "$PROJECT_JSON" ]]; then
-  PROJECT_BLOCK="$(echo "$PROJECT_JSON" | format_memories "${NEXUSMIND_SESSION_PROJECT_LIMIT}")"
+  PROJECT_BLOCK="$(echo "$PROJECT_JSON" | format_memories "${NEXUSMIND_SESSION_PROJECT_LIMIT}" || true)"
 fi
 
 # Recency list
@@ -78,7 +88,7 @@ RECENT_JSON="$(curl -sf --max-time 8 \
   -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
   "${NEXUSMIND_BASE_URL}/v1/memory?limit=${NEXUSMIND_SESSION_RECENT_LIMIT}" 2>/dev/null || true)"
 if [[ -n "$RECENT_JSON" ]]; then
-  RECENT_BLOCK="$(echo "$RECENT_JSON" | format_memories "${NEXUSMIND_SESSION_RECENT_LIMIT}")"
+  RECENT_BLOCK="$(echo "$RECENT_JSON" | format_memories "${NEXUSMIND_SESSION_RECENT_LIMIT}" || true)"
 fi
 
 # Minimal protocol pointer — full detail lives in the nexusmind-memory skill.

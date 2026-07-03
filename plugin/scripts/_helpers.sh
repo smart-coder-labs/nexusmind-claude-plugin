@@ -28,3 +28,28 @@ detect_project() {
 
   echo "$project"
 }
+
+# resolve_python: finds a real, working Python interpreter and echoes the
+# command to invoke it (may be two words, e.g. "py -3").
+# On Windows, `python3` and `python` on PATH frequently resolve to Microsoft
+# Store stub executables (under ...\AppData\Local\Microsoft\WindowsApps\)
+# that print an install hint to stderr and exit non-zero instead of running
+# any code — they are not real interpreters. We probe each candidate with a
+# trivial import to weed those out, and fall back to the `py` launcher, which
+# is the reliable way to reach a real Python install on Windows when
+# python3/python are missing or are stubs. Returns 1 if nothing works so
+# callers can degrade gracefully instead of crashing under `set -e`.
+resolve_python() {
+  local candidates=("python3" "python" "py -3" "py")
+  local candidate
+
+  for candidate in "${candidates[@]}"; do
+    # Unquoted on purpose: "py -3" must word-split into two argv entries.
+    if $candidate -c 'import sys' >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}

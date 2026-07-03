@@ -51,8 +51,20 @@ export NEXUSMIND_API_KEY=your-key-here
 
 The plugin bundles everything:
 1. The `nexusmind` MCP server, registered via the plugin's own `plugin/.mcp.json`
-2. Lifecycle hooks (SessionStart, UserPromptSubmit, SubagentStop, Stop)
+2. Lifecycle hooks (SessionStart, PreCompact, PostCompact, SessionEnd, UserPromptSubmit, SubagentStop, Stop)
 3. The `memory` skill with the full memory protocol
+
+### Lifecycle hooks
+
+| Hook | Event | Behavior |
+|------|-------|----------|
+| `session-start.sh` | `SessionStart` (`startup`/`clear`) | Injects recent + project memories as context at session start. |
+| `post-compaction.sh` | `PostCompact` | Emits recovery context right after compaction completes (previously ran on `SessionStart` with matcher `compact` — moved to the dedicated `PostCompact` event). `PostCompact` does not auto-inject plain stdout the way `SessionStart` does, so the hook wraps its output in the `{"hookSpecificOutput":{"hookEventName":"PostCompact","additionalContext":"..."}}` envelope. |
+| `pre-compact.sh` | `PreCompact` | Runs synchronously before compaction destroys context; persists a snapshot of the last ~15 assistant messages to NexusMind (upserted per session via `topic_key: session-snapshot/{session_id}`) so nothing is lost even if the model doesn't save first. |
+| `session-end.sh` | `SessionEnd` | Fallback: if the session ends and the model never saved a `session_summary`, auto-captures one from the last ~15 assistant messages. Shares `pre-compact.sh`'s `topic_key: session-snapshot/{session_id}` namespace so both upsert into one record per session instead of leaving duplicate near-identical entries. |
+| `user-prompt-submit.sh` | `UserPromptSubmit` | Injects recall context on recall-intent prompts (mode-controlled). |
+| `subagent-stop.sh` | `SubagentStop` (async) | Passively captures subagent output that looks decision-like. |
+| `session-stop.sh` | `Stop` | Gate (runs synchronously, not async, so it can block): if the turn since the last real user message looks like it produced a decision/fix/discovery and nothing was saved via `store_memory`, blocks once per session with a reminder to save. Set `NEXUSMIND_STOP_GATE=off` to disable. |
 
 The `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` environment variables are
 read from your shell environment — set them in your shell profile.

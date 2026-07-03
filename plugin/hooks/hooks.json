@@ -9,13 +9,37 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
           }
         ]
-      },
+      }
+    ],
+    "PostCompact": [
       {
-        "matcher": "compact",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/post-compaction.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/pre-compact.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-end.sh"
           }
         ]
       }
@@ -49,8 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-stop.sh",
-            "async": true
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-stop.sh"
           }
         ]
       }

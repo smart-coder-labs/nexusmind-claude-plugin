@@ -12,8 +12,18 @@ if [[ -z "${NEXUSMIND_API_KEY:-}" ]]; then
   exit 0
 fi
 
+# Real python3/python/py may all be missing or Windows Store stubs; degrade
+# gracefully everywhere below rather than crashing under set -e.
+PYTHON_BIN="$(resolve_python || true)"
+
 INPUT="$(cat)"
-subagent_output="$(echo "$INPUT" | python3 -c "
+if [[ -z "$PYTHON_BIN" ]]; then
+  # Can't parse the hook payload or build the JSON store payload without a
+  # real interpreter — nothing useful to do, exit clean.
+  exit 0
+fi
+
+subagent_output="$(echo "$INPUT" | $PYTHON_BIN -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
@@ -36,7 +46,7 @@ fi
 NEXUSMIND_BASE_URL="${NEXUSMIND_BASE_URL:-https://nexusmind-backend.fly.dev}"
 PROJECT="$(detect_project)"
 
-PAYLOAD="$(python3 -c "
+PAYLOAD="$($PYTHON_BIN -c "
 import json, sys
 content = sys.argv[1]
 project = sys.argv[2]

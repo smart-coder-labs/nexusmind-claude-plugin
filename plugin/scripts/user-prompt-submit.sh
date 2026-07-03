@@ -12,10 +12,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./_helpers.sh
 source "${SCRIPT_DIR}/_helpers.sh"
 
+# Real python3/python/py may all be missing or Windows Store stubs; degrade
+# gracefully everywhere below rather than crashing under set -e.
+PYTHON_BIN="$(resolve_python || true)"
+
 # Parse stdin
 INPUT="$(cat)"
-cwd="$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('cwd',''))" 2>/dev/null || true)"
-prompt="$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('prompt',''))" 2>/dev/null || true)"
+cwd="$(echo "$INPUT" | $PYTHON_BIN -c "import sys,json; d=json.load(sys.stdin); print(d.get('cwd',''))" 2>/dev/null || true)"
+prompt="$(echo "$INPUT" | $PYTHON_BIN -c "import sys,json; d=json.load(sys.stdin); print(d.get('prompt',''))" 2>/dev/null || true)"
 
 # Guard: API key — must run before the NEXUSMIND_PROMPT_INJECT branch in all modes.
 if [[ -z "${NEXUSMIND_API_KEY:-}" ]]; then
@@ -45,7 +49,13 @@ fetch_memory_lines() {
     -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
     "$1" 2>/dev/null || true)"
   [[ -z "$json" ]] && return 0
-  echo "$json" | python3 -c "
+  # No working Python: drain stdin (avoid blocking the upstream writer) and
+  # emit nothing instead of aborting the whole hook.
+  if [[ -z "$PYTHON_BIN" ]]; then
+    echo "$json" >/dev/null 2>&1 || true
+    return 0
+  fi
+  echo "$json" | $PYTHON_BIN -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -62,10 +72,15 @@ except Exception:
 }
 
 emit_system_message() {
-  python3 -c "
+  # Can't build the JSON payload without a real interpreter; skip silently
+  # rather than crash the hook (no system message is a safe degradation).
+  if [[ -z "$PYTHON_BIN" ]]; then
+    return 0
+  fi
+  $PYTHON_BIN -c "
 import json, sys
 print(json.dumps({'systemMessage': sys.argv[1]}))
-" "$1"
+" "$1" 2>/dev/null || true
 }
 
 if [[ "$NEXUSMIND_PROMPT_INJECT" == "minimal" ]]; then
@@ -98,7 +113,7 @@ if [[ "$NEXUSMIND_PROMPT_INJECT" == "full" ]]; then
   # Section 2: project-specific memories — filter by project, do NOT
   # semantic-search the project name. This runs on every prompt; searching the
   # project name floods the audit log with noise and returns poor matches.
-  PROJECT_ENC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
+  PROJECT_ENC="$($PYTHON_BIN -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "${PROJECT}" 2>/dev/null || echo "${PROJECT}")"
   PROJECT_BLOCK="$(fetch_memory_lines "${NEXUSMIND_BASE_URL}/v1/memory?project=${PROJECT_ENC}&limit=${NEXUSMIND_PROMPT_MEMORY_LIMIT}" "${NEXUSMIND_PROMPT_MEMORY_LIMIT}")"
   [[ -z "$PROJECT_BLOCK" ]] && PROJECT_BLOCK="(none)"
 

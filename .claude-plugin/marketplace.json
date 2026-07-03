@@ -10,7 +10,7 @@
     {
       "name": "nexusmind",
       "description": "Shared team memory via MCP + lifecycle hooks. Claude stores and retrieves decisions, bugs, and conventions automatically.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Smart Coder Labs"
       },
