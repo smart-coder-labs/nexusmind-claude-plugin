@@ -43,11 +43,11 @@ When the user says "install that", "add it to my Claude/Cursor/Codex":
 
 1. **Plan first.** Call `plan_harness_install` with `harness_id`, `version`, `target_tool`, and `scope`. It returns a `DiffEntry[]`: for each file, the destination path, whether it's a `create` or `overwrite`, and any warning. It writes nothing.
 2. **Show the diff to the user.** Especially call out any `overwrite` entries (an existing local file will change) and any executable formats (`hook`, `claude_code_plugin`).
-3. **Get explicit confirmation.** Do not proceed on a vague "ok" if there are overwrites or executables — name what will change.
-4. **Apply.** Call `apply_harness_install` with the confirmation. Two gates you MUST satisfy:
-   - `warning_acknowledged: true` is **required** for executable formats (`hook`, `claude_code_plugin`) — never set it without the user actually acknowledging the executable risk.
-   - `overwrite_confirmed: true` is **required** if any diff entry is an `overwrite`. Without it, apply refuses with zero writes.
-5. **Read the result.** `result_status` will be one of `installed`, `failed`, `hash_mismatch`, or `overwrite_not_confirmed`. On `hash_mismatch` the manifest changed since you planned — re-run `plan_harness_install` and re-confirm; do not retry apply blindly.
+3. **Get explicit confirmation — use the approval UI, not a text guess.** You MUST present the diff and ask for approval with `AskUserQuestion` (or the host's confirmation UI) before calling `apply_harness_install`. Name exactly what will change — especially `overwrite` entries and executable formats. Never infer approval from a vague "ok" or from silence.
+4. **Apply.** Call `apply_harness_install` only after that approval.
+   - **Server-side hard gate:** when the client supports it, `apply_harness_install` also raises its own MCP elicitation prompt and refuses to write unless the user accepts it — this is enforced by the server, independent of you. Do not try to work around it.
+   - **Flag fallback (clients without elicitation):** `warning_acknowledged: true` is **required** for executable formats (`hook`, `claude_code_plugin`) — never set it without the user actually acknowledging the executable risk. `overwrite_confirmed: true` is **required** if any diff entry is an `overwrite`; without it, apply refuses with zero writes. Never set either flag unless the user genuinely approved via step 3.
+5. **Read the result.** `result_status` will be one of `installed`, `declined`, `failed`, `hash_mismatch`, or `overwrite_not_confirmed`. On `declined` the user rejected the confirmation — stop, do not retry. On `hash_mismatch` the manifest changed since you planned — re-run `plan_harness_install` and re-confirm; do not retry apply blindly.
 
 ## Workflow 3 — Create and publish a harness
 
