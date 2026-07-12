@@ -9,6 +9,51 @@ You have NexusMind **SDD artifact** tools available. An *SDD change* is one `ope
 
 This is the **artifact protocol**, not the phase workflow. The `sdd-*` phase skills (`sdd-propose`, `sdd-design`, `sdd-tasks`, …) are a separate **harness**, installed from the harness library — they decide *what* to write. This skill decides *where it goes and how it comes back*.
 
+## SDD is OpenSpec. The files are the convention.
+
+An SDD artifact is not a free-form document you invent a home for. It is **a file at a defined path in the `openspec/` tree**, and the store mirrors that tree exactly. Get the path wrong and the store and the filesystem stop describing the same thing.
+
+```
+openspec/
+├── config.yaml                    <- project SDD config (artifact_store: nexusmind)
+├── specs/                         <- THE SOURCE OF TRUTH: the living specification.
+│   └── {capability}/spec.md          sdd-archive merges each change's deltas into here.
+└── changes/
+    ├── archive/                   <- completed changes, folder named YYYY-MM-DD-{change-name}
+    └── {change-name}/             <- one in-flight change
+        ├── proposal.md
+        ├── specs/{capability}/spec.md   <- DELTA specs (ADDED / MODIFIED / REMOVED / RENAMED)
+        ├── design.md
+        ├── tasks.md
+        ├── exploration.md         <- optional
+        ├── apply-progress.md
+        ├── verify-report.md
+        ├── archive-report.md
+        └── state.yaml
+```
+
+The `kind` you pass to `save_sdd_artifact` is the **filename stem** of that file. They are the same fact, expressed twice:
+
+| `kind` | File |
+|---|---|
+| `proposal` | `proposal.md` |
+| `spec` | `specs/{capability}/spec.md` — **pass `capability`** |
+| `design` | `design.md` |
+| `tasks` | `tasks.md` |
+| `exploration` | `exploration.md` |
+| `apply-progress` | `apply-progress.md` |
+| `verify-report` | `verify-report.md` |
+| `archive-report` | `archive-report.md` |
+| `state` | `state.yaml` |
+
+Three are **hyphenated**, not snake_case. `apply_progress` is rejected — the DB and the filesystem must agree about the identity of the same document.
+
+Always pass `path`: the repo-relative path of the file you just wrote. It is what lets a reader get from the store back to the file.
+
+**A delta spec goes under `specs/{capability}/`, never at the change root.** Some older changes in the wild put a bare `spec.md` beside `proposal.md`. The store tolerates it (it lands with an empty capability) but **do not reproduce it** — a change with three capabilities writes three files and makes three `save_sdd_artifact` calls. `spec` is the only kind that repeats within a change.
+
+> **Not modelled yet:** `openspec/specs/{capability}/spec.md` — the *main* specs, the source of truth that `sdd-archive` merges deltas into. The store covers `openspec/changes/**` only. Keep writing those files as the convention says; do **not** try to smuggle them in under another kind.
+
 ## The one rule that governs everything
 
 **Both writes succeed, or the phase fails loudly.**
@@ -40,16 +85,7 @@ Call it **unconditionally**, after every artifact write. Do **not** add a "did t
 
 Required: `project`, `change_name`, `kind`, `content`. Strongly recommended: `path` (the repo-relative file path, so the store knows where the file lives).
 
-The `kind` strings are the **on-disk filename stems**, and three of them are hyphenated:
-
-```
-exploration  proposal  spec  design  tasks
-apply-progress   verify-report   archive-report   state
-```
-
-`apply_progress` is **rejected**. The DB and the filesystem have to agree about the identity of the same document.
-
-`spec` is the only kind that repeats within a change — once per capability, from `specs/{capability}/spec.md`. Pass `capability` for it, and only for it.
+See the table above for the `kind` → file mapping. Pass `capability` for `spec`, and only for `spec`.
 
 **Re-running a phase appends a revision; it never overwrites.** Content A → B → A appends *revision 3* — a revert is an event and belongs in the history. There is no way to lose an earlier version.
 
