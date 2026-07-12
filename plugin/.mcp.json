@@ -2,7 +2,10 @@
   "mcpServers": {
     "nexusmind": {
       "command": "npx",
-      "args": ["-y", "@smart-coder-labs/nexusmind-mcp@0.8.2"],
+      "args": [
+        "-y",
+        "@smart-coder-labs/nexusmind-mcp@0.9.0"
+      ],
       "env": {
         "NEXUSMIND_API_KEY": "${NEXUSMIND_API_KEY}",
         "NEXUSMIND_BASE_URL": "${NEXUSMIND_BASE_URL}"
