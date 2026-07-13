@@ -1,7 +1,7 @@
 {
   "name": "nexusmind",
   "description": "Team memory for AI coding agents. Store decisions, bugs, and conventions \u2014 shared across the whole team.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": {
     "name": "NexusMind"
   },
