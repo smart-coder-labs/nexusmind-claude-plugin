@@ -1,27 +1,5 @@
 {
   "hooks": {
-    "PostCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/post-compaction.sh"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/user-prompt-submit.sh"
-          }
-        ]
-      }
-    ],
     "SubagentStop": [
       {
         "matcher": "",
