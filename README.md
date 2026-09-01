@@ -86,3 +86,14 @@ claude plugin uninstall nexusmind
 
 Remove the `NEXUSMIND_API_KEY` and `NEXUSMIND_BASE_URL` exports from your shell profile.
 If you ever registered the server at the user level, also run `claude mcp remove nexusmind`.
+
+---
+
+## Related repositories
+
+- **[nexus-mind](https://github.com/smart-coder-labs/nexus-mind)** — the NexusMind backend + admin panel.
+- **[nexusmind-mcp](https://github.com/smart-coder-labs/nexusmind-mcp)** — the standalone MCP server this plugin bundles.
+
+## License
+
+[MIT](LICENSE) © Smart Coder Labs
