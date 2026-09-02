@@ -40,6 +40,19 @@ fi
 
 tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty')"
 
+# Index-aware fallback. The SessionStart probe drops a per-session marker when
+# the project's code index is missing, stale, or could not be confirmed — in
+# those cases grep is the legitimate fallback, not a habit to break, so the hook
+# stands down. Enforcement only bites when there is a usable index to enforce
+# toward. Keyed on session_id so one repo's decision never leaks into another.
+session_id="$(printf '%s' "$input" | jq -r '.session_id // empty')"
+if [[ -n "$session_id" ]]; then
+  marker="${TMPDIR:-/tmp}/nexusmind-allow-grep-${session_id}"
+  if [[ -f "$marker" ]]; then
+    exit 0
+  fi
+fi
+
 deny() {
   # $1: what was blocked, for the reason line.
   jq -n --arg reason "$1" '{
