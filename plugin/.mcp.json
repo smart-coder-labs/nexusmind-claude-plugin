@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@smart-coder-labs/nexusmind-mcp@0.15.0"
+        "@smart-coder-labs/nexusmind-mcp@0.15.1"
       ],
       "env": {
         "NEXUSMIND_API_KEY": "${NEXUSMIND_API_KEY}",
