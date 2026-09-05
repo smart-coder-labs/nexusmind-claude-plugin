@@ -18,22 +18,44 @@ You have NexusMind memory tools available. Use this protocol whenever you recall
 | `get_memory` | Full untruncated content by id — previews are not enough |
 | `delete_memory` | Only when the user explicitly asks; requires `confirm: true` |
 
-## Proactive Save Rule
+## When to Save
 
-Call `store_memory` IMMEDIATELY after ANY of the following — do NOT wait to be asked:
+A memory earns its place only if **a teammate arriving next month would be worse
+off not knowing it**. Apply that test before every `store_memory` call; if the
+answer is no, do not save.
 
-- Architecture or design decision made
-- Bug fixed (include root cause and what broke)
-- Convention documented or established
-- Tool or library choice made with reasoning
-- Non-obvious discovery, gotcha, or edge case found
-- Pattern established (naming, structure, approach)
-- Feature implemented with a non-obvious approach
-- Any configuration or environment change
+Save, without being asked:
+
+- **An architecture or design decision**, with the alternatives it beat and why.
+- **A bug fixed**, with the root cause — what actually broke, not what was typed.
+- **A convention established or discovered**, when the code alone does not state it.
+- **A gotcha or non-obvious behaviour** that cost real time to work out.
+- **A library or tool chosen**, with the tradeoff that decided it.
+
+Do NOT save:
+
+- **Routine work.** A new endpoint, a renamed variable, a test added, a
+  dependency declared. Adding a route the way this project always adds routes is
+  not knowledge; it is Tuesday.
+- **Anything the code already says.** If reading the file answers it, the memory
+  is a stale copy waiting to happen — the file changes, the memory does not.
+- **Work that may never land.** Uncommitted changes, a scratch branch, an
+  experiment. Measured: a throwaway worktree produced memories describing a
+  constant and a bug fix that exist in no real repository. Save after the change
+  is real, not while it is being written.
+- **A summary of what you just did.** The user can read the diff. A memory that
+  restates the turn is cost with no reader.
+
+**One check, at the end of the work — not after every task**: "Did something get
+decided, break, or surprise me here that a teammate could not recover from the
+code?" If yes, save it then. If the session produced nothing of the sort, saving
+nothing is the correct outcome and the common one.
+
+Saving is silent. It is not the answer to the user's request, so it never
+replaces reporting what was done — a turn spent announcing "memory saved" is a
+turn the user did not ask for.
 
 Always pass `tool="claude-code"` and set `project` to the detected project name.
-
-**Self-check after EVERY task**: "Did I make a decision, fix a bug, learn something non-obvious, or establish a convention? If yes, call store_memory NOW."
 
 ### Type taxonomy
 

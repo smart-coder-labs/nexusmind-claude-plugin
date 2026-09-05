@@ -38,7 +38,19 @@ if [[ -z "$subagent_output" || "${#subagent_output}" -lt 100 ]]; then
 fi
 
 # Quality gate: must contain at least one decision-like keyword
-KEYWORD_RE='decided|decision|fixed|error|warning|convention|architecture|discovered|discovery|issue|solution|implemented|changed|added|removed|refactored|pattern|config|gotcha|caveat|note|important'
+# Words that signal a REASON, not an action.
+#
+# The previous list matched `added|changed|implemented|removed|note` — words
+# that appear in every turn that touches code — so the gate fired on routine
+# work and the agent saved memories for it. Measured on a throwaway worktree:
+# five memories, two of them describing a constant and a bug fix that exist in
+# no real repository, and one turn spent answering "Memoria guardada." instead
+# of reporting the work.
+#
+# What is worth persisting is why something is the way it is: a choice and what
+# it beat, a root cause, a surprise. Those leave different traces than "added a
+# route", and this list matches only those.
+KEYWORD_RE='decided|decision|chose|tradeoff|trade-off|instead of|root cause|turns out|it turned out|gotcha|caveat|convention|architecture|discovered|surprising|the reason|why we|deliberately|on purpose'
 if ! echo "$subagent_output" | grep -iEq "$KEYWORD_RE"; then
   exit 0
 fi
