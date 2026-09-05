@@ -11,10 +11,34 @@ This project's code is indexed in NexusMind. Finding code is therefore a **seman
 
 **To find or understand code, call NexusMind first. Do not grep the tree.**
 
+### `locate_code` first, always
+
+`search_code` returns whole symbols and is roughly ten times more expensive per
+call. Measured on a real session: `locate_code` averaged 2,422 characters per
+call, `search_code` 25,108 — and one call returned 40,334. Over five calls that
+was 125,540 characters, more than twice what the same session spent reading
+files directly.
+
+So: **locate first, then read the file.** `locate_code` (≈2.4k) plus a targeted
+`Read` (≈2.1k) costs about a fifth of one `search_code`, and it is what you end
+up doing anyway — that same session went on to read 13 files after searching.
+
+Reach for `search_code` only when the paths alone did not answer it: you need to
+see how something is written across several files, or you do not know which of
+the ranked files holds the part you want.
+
+**Never send the same query to both.** Observed and wasteful: a query went to
+`locate_code` for 2,621 characters and then to `search_code` for 27,424 — ten
+times the cost for a question already answered.
+
+A trimmed `search_code` hit ends with the file and line range it came from. That
+is not a defect to work around; it is the pointer. Read those lines if you need
+the rest, rather than re-running the search with a wider net.
+
 | Need | Tool | Returns |
 |------|------|---------|
-| "Which file(s) do I read for X?" | `mcp__nexusmind__locate_code` | Ranked **file paths** (no bodies) — token-cheap |
-| "Show me the code for X" | `mcp__nexusmind__search_code` | Ranked **code chunks** |
+| Anything — **start here** | `mcp__nexusmind__locate_code` | Ranked **file paths** (no bodies) — token-cheap |
+| The paths were not enough | `mcp__nexusmind__search_code` | Ranked **code chunks** |
 | "Is this project indexed / what's in it?" | `mcp__nexusmind__list_code_files` | Indexed file paths |
 | "Index it first" | `mcp__nexusmind__index_project` | Builds the index (once, or after big changes) |
 
