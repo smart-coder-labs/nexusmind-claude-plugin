@@ -246,6 +246,12 @@ check "y también en profundidad"                              "alpha" "$(in_dir
 check "otro subdirectorio resuelve al suyo"                   "beta"  "$(in_dir "$ws/repoB")"
 check "la raíz del workspace usa defaults.project"            "alpha" "$(in_dir "$ws")"
 
+# El default NO puede reclamar todo el árbol: un directorio sin mapear —un clon
+# de otro repositorio, un directorio de trabajo— debe seguir con la inferencia,
+# no heredar el proyecto por defecto del workspace.
+mkdir -p "$ws/ajeno/deep"
+check "un directorio sin mapear NO hereda el default"        "deep"  "$(in_dir "$ws/ajeno/deep")"
+
 # ── 14. El config manda sobre la inferencia por git: dentro de un clon cuyo
 #        nombre NO coincide con el proyecto, gana lo que dice el config ──────
 gitws="$tmp/gitws"; mkdir -p "$gitws/vendor-checkout"
