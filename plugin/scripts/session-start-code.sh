@@ -17,6 +17,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./_helpers.sh
 source "${SCRIPT_DIR}/_helpers.sh" 2>/dev/null || true
 
+# A hook does not inherit the MCP server's env; resolve the key from where the
+# client keeps it, or every check below silently decides NexusMind is unconfigured.
+hydrate_nexusmind_env 2>/dev/null || true
+
 INPUT="$(cat)"
 PYTHON_BIN="$(resolve_python 2>/dev/null || true)"
 
@@ -31,7 +35,13 @@ cwd="$(get cwd)"
 marker="${TMPDIR:-/tmp}/nexusmind-allow-grep-${session_id:-nosession}"
 rm -f "$marker" 2>/dev/null || true   # start clean; only (re)create when falling back
 
-BASE_URL="${NEXUSMIND_BASE_URL:-https://nexusmind-backend.fly.dev}"
+# A hook does not inherit the MCP server's `env`, so the key may be configured
+# and still absent from this process. resolve_nexusmind_env looks where the client
+# itself looks; without it a correctly configured user silently lost enforcement.
+NM_KEY=""
+NM_URL=""
+if IFS=$'\t' read -r NM_KEY NM_URL < <(resolve_nexusmind_env 2>/dev/null); then :; fi
+BASE_URL="${NM_URL:-${NEXUSMIND_BASE_URL:-https://nexusmind-backend.fly.dev}}"
 
 allow_fallback() { # $1: human reason for the context block
   : > "$marker" 2>/dev/null || true
@@ -62,14 +72,19 @@ CTX
 
 # Can we even probe? Without a key, jq/python, or curl we cannot confirm a usable
 # index, and the whole point is not to block grep on an unconfirmed index.
-if [[ -z "${NEXUSMIND_API_KEY:-}" ]] || ! command -v curl >/dev/null 2>&1 || [[ -z "$PYTHON_BIN" ]]; then
-  allow_fallback "The code index could not be confirmed this session (no API key / tools)"
+if [[ -z "$NM_KEY" ]]; then
+  allow_fallback "No NexusMind API key is reachable from this session — checked the \
+environment, ~/.claude/settings.json, ~/.claude.json and the Codex config. Run \
+\`npx @smart-coder-labs/nexusmind-mcp setup\` (or \`… doctor\` to see where the key lives)"
+fi
+if ! command -v curl >/dev/null 2>&1 || [[ -z "$PYTHON_BIN" ]]; then
+  allow_fallback "The code index could not be confirmed this session (curl or python missing)"
 fi
 
 PROJECT="$(detect_project 2>/dev/null || true)"
 [[ -n "$PROJECT" ]] || allow_fallback "No project could be detected for the code index"
 
-PROJECTS_JSON="$(curl -sf --max-time 6 -H "Authorization: Bearer ${NEXUSMIND_API_KEY}" \
+PROJECTS_JSON="$(curl -sf --max-time 6 -H "Authorization: Bearer ${NM_KEY}" \
   "${BASE_URL}/v1/code/projects" 2>/dev/null || true)"
 [[ -n "$PROJECTS_JSON" ]] || allow_fallback "The code index service was unreachable"
 

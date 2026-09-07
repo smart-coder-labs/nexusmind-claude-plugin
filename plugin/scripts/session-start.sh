@@ -7,6 +7,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./_helpers.sh
 source "${SCRIPT_DIR}/_helpers.sh"
 
+# A hook does not inherit the MCP server's env; resolve the key from where the
+# client keeps it, or every check below silently decides NexusMind is unconfigured.
+hydrate_nexusmind_env 2>/dev/null || true
+
 # Real python3/python/py may all be missing or Windows Store stubs; degrade
 # gracefully everywhere below rather than crashing under set -e.
 PYTHON_BIN="$(resolve_python || true)"

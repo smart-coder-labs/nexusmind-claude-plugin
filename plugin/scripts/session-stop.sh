@@ -15,6 +15,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./_helpers.sh
 source "${SCRIPT_DIR}/_helpers.sh"
 
+# A hook does not inherit the MCP server's env; resolve the key from where the
+# client keeps it, or every check below silently decides NexusMind is unconfigured.
+hydrate_nexusmind_env 2>/dev/null || true
+
 # Same decision-keyword regex as subagent-stop.sh — copied verbatim so
 # behavior stays consistent across hooks.
 # Words that signal a REASON, not an action.
