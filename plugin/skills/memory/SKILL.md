@@ -111,4 +111,4 @@ Do not skip step 1. Without it, everything done before compaction is lost.
 
 ## Relationship to the hook scripts
 
-`session-start.sh`, `post-compaction.sh`, and `user-prompt-submit.sh` only inject short pointers to this skill (tool list, proactive-save rule, search rule, session-close mandate) to keep per-session and per-prompt token cost low. This file is the single source of truth for the full protocol — if a hook's short pointer and this file ever seem to disagree, this file wins.
+`session-start-code.sh` only injects a short pointer to this skill (tool list, proactive-save rule, search rule, session-close mandate) to keep per-session and per-prompt token cost low. This file is the single source of truth for the full protocol — if a hook's short pointer and this file ever seem to disagree, this file wins.
