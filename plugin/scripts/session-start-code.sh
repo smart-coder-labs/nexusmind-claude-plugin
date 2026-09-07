@@ -2,12 +2,11 @@
 # SessionStart hook: decide, once per session, whether NexusMind code search is
 # enforceable — and put code discovery on it from the first turn when it is.
 #
-# The PreToolUse hook denies grep for code discovery, but grep must stay a real
-# fallback, not a wall: if the project has no code index, the index is stale, or
-# we simply cannot confirm one this session, blocking grep would leave the agent
-# with no way to find code. So this probe writes a per-session marker in exactly
-# those cases and the PreToolUse hook stands down when it sees it. Enforcement
-# only bites when there is a fresh index to enforce toward.
+# It emits one short block telling the agent whether the index is usable, and
+# nothing else. There is no longer a PreToolUse hook denying grep: measurement
+# showed the denial did not change what the agent did, only what it cost — it
+# lost a round trip to the refusal and then ran the same search through the
+# escape hatch. What remains is a statement of fact the agent can act on.
 #
 # stdout is injected as session context. Everything the probe does is kept off
 # stdout so it cannot corrupt that context.
@@ -64,8 +63,8 @@ This project's code is indexed in NexusMind. To find or understand code — wher
 something is defined, how a pattern is implemented, which files a change touches —
 call `mcp__nexusmind__locate_code` (ranked file paths) or
 `mcp__nexusmind__search_code` (ranked code chunks) FIRST, then read only what they
-point to. Do NOT use grep/rg/find or the Grep tool for code discovery — those
-calls are denied by a hook. Full detail: the nexusmind-code skill.
+point to — it is fewer round trips than scanning the tree. Full detail: the
+nexusmind-code skill.
 CTX
   exit 0
 }

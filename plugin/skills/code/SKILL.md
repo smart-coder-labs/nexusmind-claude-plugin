@@ -5,7 +5,7 @@ description: NexusMind semantic code search — how to find and understand code 
 
 # NexusMind Code Search — Protocol
 
-This project's code is indexed in NexusMind. Finding code is therefore a **semantic lookup**, not a filesystem scan. Reaching for `grep`/`rg`/`find` (or the `Grep` tool) to discover code reads files the index already knows about and burns context for nothing — and the PreToolUse hook will deny those calls and send you back here.
+This project's code is indexed in NexusMind. Finding code is therefore a **semantic lookup**, not a filesystem scan. Reaching for `grep`/`rg`/`find` (or the `Grep` tool) to discover code reads files the index already knows about and burns context for nothing.
 
 ## The rule
 
@@ -50,4 +50,6 @@ the rest, rather than re-running the search with a wider net.
 
 ## When grep is legitimately right
 
-Semantic code search is for code. For a genuine **non-code** text hunt — log files, data fixtures, a one-off string in generated output — grep is the right tool. In that case either export `NEXUSMIND_ALLOW_GREP=1` for the session or add `# nexusmind:allow` to the command, and the hook will step aside. Do not use this to route around code discovery.
+Semantic code search is for code. For a genuine **non-code** text hunt — log files, data fixtures, a one-off string in generated output — grep is the right tool and nothing stands in the way.
+
+This used to be enforced by a PreToolUse hook that denied grep. It was removed after measurement: the denial did not stop the agent grepping, it made it cost more. The agent lost a round trip to the refusal and then ran the same search through the documented escape hatch — `NEXUSMIND_ALLOW_GREP=1` appeared ten times in one measured set. Removing the gate cut cost per task by 26.5%, with disjoint ranges on tool calls and context in two of three session shapes, and no change in correctness. The guidance above stands on its own merits; it is advice now, not a wall.
