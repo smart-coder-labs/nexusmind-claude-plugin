@@ -218,5 +218,65 @@ else
   printf '  FAIL hydrate aborts the hook when nothing is configured\n'; fail=$((fail+1))
 fi
 
+# ── 13. El caso que motivó todo: un workspace que NO es un repositorio. Sin
+#        config, detect_project devuelve el nombre de la carpeta, que no es
+#        ningún proyecto indexado, y el arranque apaga NexusMind ─────────────
+ws="$tmp/ws"; mkdir -p "$ws/repoA/src" "$ws/repoB"
+cat > "$ws/.nexusmind.yaml" <<'YAML'
+version: 1
+repository:
+  id: ws
+defaults:
+  project: alpha
+projects:
+  alpha:
+    project_id: alpha
+    paths:
+      - repoA
+      - repoA/**
+  beta:
+    project_id: beta
+    paths:
+      - repoB
+      - repoB/**
+YAML
+in_dir() { ( cd "$1" && bash -c "source '$SCRIPT_DIR/_helpers.sh'; detect_project" ); }
+check "un subdirectorio mapeado resuelve a su proyecto"      "alpha" "$(in_dir "$ws/repoA")"
+check "y también en profundidad"                              "alpha" "$(in_dir "$ws/repoA/src")"
+check "otro subdirectorio resuelve al suyo"                   "beta"  "$(in_dir "$ws/repoB")"
+check "la raíz del workspace usa defaults.project"            "alpha" "$(in_dir "$ws")"
+
+# ── 14. El config manda sobre la inferencia por git: dentro de un clon cuyo
+#        nombre NO coincide con el proyecto, gana lo que dice el config ──────
+gitws="$tmp/gitws"; mkdir -p "$gitws/vendor-checkout"
+cat > "$gitws/.nexusmind.yaml" <<'YAML'
+version: 1
+repository:
+  id: gitws
+projects:
+  el-nombre-real:
+    project_id: el-nombre-real
+    paths:
+      - vendor-checkout
+      - vendor-checkout/**
+YAML
+( cd "$gitws/vendor-checkout" && git init -q . 2>/dev/null && git remote add origin https://github.com/x/nombre-enganoso.git 2>/dev/null ) || true
+check "el config gana a la inferencia por remoto de git" \
+  "el-nombre-real" "$(in_dir "$gitws/vendor-checkout")"
+
+# ── 15. Sin config no cambia nada: la inferencia de siempre ─────────────────
+plain="$tmp/plain/mi-repo"; mkdir -p "$plain"
+check "sin config, sigue infiriendo del directorio" "mi-repo" "$(in_dir "$plain")"
+
+# ── 16. Un config ilegible no puede tumbar el arranque de sesión ────────────
+broken="$tmp/broken"; mkdir -p "$broken/sub"
+printf 'esto: no es\n  yaml: [valido\n' > "$broken/.nexusmind.yaml"
+got="$(in_dir "$broken/sub" 2>/dev/null)"
+if [[ -n "$got" ]]; then
+  printf '  ok   un config roto degrada a la inferencia (%s)\n' "$got"; pass=$((pass+1))
+else
+  printf '  FAIL un config roto deja a detect_project sin respuesta\n'; fail=$((fail+1))
+fi
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [[ $fail -eq 0 ]]

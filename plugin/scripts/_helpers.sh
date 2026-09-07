@@ -1,10 +1,102 @@
 #!/usr/bin/env bash
 # _helpers.sh — shared helper functions for NexusMind Claude Code plugin scripts
 
+# project_from_config: echoes the project alias whose `paths` claim $PWD, from the
+# nearest `.nexusmind.yaml` walking up from the current directory. Silent (empty)
+# when there is no config, no match and no default.
+#
+# Deliberately no git: the case this exists for is a directory that is not a
+# repository. Matching mirrors resolveProject in the MCP — glob against the path
+# relative to the config's own directory, most specific wins, `defaults.project`
+# as the fallback — so hooks and tools agree on the answer.
+project_from_config() {
+  local py; py="$(resolve_python 2>/dev/null || true)"
+  [[ -n "$py" ]] || return 1
+  $py - <<'PY' 2>/dev/null
+import os, sys
+
+def find_config(start):
+    cur = os.path.abspath(start)
+    while True:
+        cand = os.path.join(cur, '.nexusmind.yaml')
+        if os.path.isfile(cand):
+            return cand
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            return None
+        cur = parent
+
+cfg = find_config(os.getcwd())
+if not cfg:
+    raise SystemExit(1)
+
+# Minimal reader for the two keys that matter. A full YAML parser is not worth a
+# dependency in a hook that must never block a session start.
+projects, order, default = {}, [], None
+alias = None
+section = None
+for raw in open(cfg, encoding='utf-8'):
+    line = raw.rstrip('\n')
+    if not line.strip() or line.lstrip().startswith('#'):
+        continue
+    indent = len(line) - len(line.lstrip())
+    body = line.strip()
+    if indent == 0:
+        section = body.rstrip(':')
+        alias = None
+        continue
+    if section == 'defaults' and body.startswith('project:'):
+        default = body.split(':', 1)[1].strip().strip('"\'')
+        continue
+    if section != 'projects':
+        continue
+    if indent == 2 and body.endswith(':'):
+        alias = body[:-1].strip()
+        projects[alias] = []
+        order.append(alias)
+    elif alias and body.startswith('- '):
+        projects[alias].append(body[2:].strip().strip('"\''))
+
+root = os.path.dirname(cfg)
+rel = os.path.relpath(os.getcwd(), root).replace(os.sep, '/')
+if rel == '.':
+    rel = ''
+
+best, best_len = None, -1
+for a in order:
+    for pat in projects[a]:
+        pat = pat.rstrip('/')
+        base = pat[:-3] if pat.endswith('/**') else pat
+        if base == '**':
+            hit, length = True, 0
+        else:
+            hit = rel == base or rel.startswith(base + '/')
+            length = len(base)
+        if hit and length > best_len:
+            best, best_len = a, length
+
+print(best or default or '')
+PY
+}
+
 # detect_project: determines the project name from git or directory context.
 # Priority: git remote origin repo name → git root basename → cwd basename.
 detect_project() {
   local project=""
+
+  # 0. A `.nexusmind.yaml` claiming this directory wins over anything inferred.
+  #
+  # Inference works fine inside a clone and not at all one level up: a workspace
+  # folder holding several clones is not a repository, so git says nothing and
+  # the fallback returns the folder's own name — a project that does not exist,
+  # which makes the session-start probe declare "no index" and stand NexusMind
+  # down. The config is the only thing that can say which project a path belongs
+  # to when the filesystem cannot.
+  project="$(project_from_config 2>/dev/null || true)"
+  if [[ -n "$project" ]]; then
+    echo "$project"
+    return 0
+  fi
 
   # 1. Try git remote origin URL → extract repo name
   if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
