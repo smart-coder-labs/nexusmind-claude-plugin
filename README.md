@@ -40,11 +40,14 @@ claude mcp remove nexusmind
 |----------|---------|-------------|
 | `NEXUSMIND_API_KEY` | — | Your NexusMind API key (required) |
 | `NEXUSMIND_BASE_URL` | `https://nexusmind-backend.fly.dev` | Backend URL (optional, for self-hosting) |
+| `NEXUSMIND_MCP_TOOL_PROFILE` | `essential` | MCP tool profile. Set `only_context` on a context-only deployment (memories, conventions, projects, clients, code search — no tasks, SDD or harness tools). |
 
 Set these in your shell profile or pass them before running Claude Code:
 
 ```bash
 export NEXUSMIND_API_KEY=your-key-here
+# Context-only deployments (the admin built with VITE_ADMIN_PROFILE=only-context):
+export NEXUSMIND_MCP_TOOL_PROFILE=only_context
 ```
 
 ## What gets installed
