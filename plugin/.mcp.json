@@ -4,12 +4,12 @@
       "command": "npx",
       "args": [
         "-y",
-        "@smart-coder-labs/nexusmind-mcp@0.15.1"
+        "@smart-coder-labs/nexusmind-mcp@0.18.0"
       ],
       "env": {
         "NEXUSMIND_API_KEY": "${NEXUSMIND_API_KEY}",
         "NEXUSMIND_BASE_URL": "${NEXUSMIND_BASE_URL}",
-        "NEXUSMIND_MCP_TOOL_PROFILE": "essential"
+        "NEXUSMIND_MCP_TOOL_PROFILE": "${NEXUSMIND_MCP_TOOL_PROFILE:-essential}"
       }
     }
   }

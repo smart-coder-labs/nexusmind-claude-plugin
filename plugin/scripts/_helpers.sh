@@ -75,7 +75,12 @@ for a in order:
         if hit and length > best_len:
             best, best_len = a, length
 
-print(best or default or '')
+# El default solo vale EN el directorio del config, no en todo lo que cuelga de
+# él. Aplicarlo a cualquier ruta sin mapear hace que el fichero reclame árboles
+# que no son suyos: un clon de otro repositorio dentro del workspace resolvería
+# al proyecto por defecto en vez de al suyo. Sin mapeo y fuera de la raíz, se
+# devuelve vacío y detect_project sigue con la inferencia de siempre.
+print(best or (default if rel == '' else '') or '')
 PY
 }
 
