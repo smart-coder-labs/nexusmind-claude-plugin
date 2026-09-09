@@ -50,6 +50,23 @@ export NEXUSMIND_API_KEY=your-key-here
 export NEXUSMIND_MCP_TOOL_PROFILE=only_context
 ```
 
+### Which project a session belongs to
+
+The hooks detect the project name in this order:
+
+1. A `.nexusmind.yaml` whose `paths` claim the current directory (the matching **alias** is used
+   as the project name).
+2. The git remote `origin` repository name (`github.com/org/my-repo.git` → `my-repo`).
+3. The git root directory name, then the current directory name.
+
+If your NexusMind project is named after the repository, nothing to do. Add a `.nexusmind.yaml`
+when the folder is not a git repository (a workspace holding several clones), when a monorepo maps
+subtrees to different projects, or when the repository name differs from the project name.
+Reference and examples:
+[docs/REPOSITORY_CONFIG.md](https://github.com/smart-coder-labs/nexus-mind/blob/main/docs/REPOSITORY_CONFIG.md).
+Keep `paths` to literal directories (`dir`, `dir/**`): the hook matcher is deliberately minimal and
+ignores `*`, `?` and `exclude`.
+
 ## What gets installed
 
 The plugin bundles everything:
