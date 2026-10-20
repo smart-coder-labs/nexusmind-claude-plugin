@@ -18,8 +18,20 @@ Team memory for AI coding agents. Store decisions, bugs, and conventions — sha
 ## Install
 
 ```bash
-claude plugin marketplace add smart-coder-labs/nexus-mind
-claude plugin install nexusmind
+claude plugin marketplace add smart-coder-labs/nexusmind-claude-plugin
+claude plugin install nexusmind@nexusmind
+```
+
+The marketplace manifest lives in this repository (`.claude-plugin/marketplace.json`),
+so the source is `smart-coder-labs/nexusmind-claude-plugin` — not the main
+`nexus-mind` repo, which has no marketplace file. The marketplace is named
+`nexusmind`, hence `nexusmind@nexusmind` (`<plugin>@<marketplace>`).
+
+From inside Claude Code the equivalent is:
+
+```
+/plugin marketplace add smart-coder-labs/nexusmind-claude-plugin
+/plugin install nexusmind@nexusmind
 ```
 
 The marketplace install is the only supported path. The plugin registers the
