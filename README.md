@@ -54,13 +54,49 @@ claude mcp remove nexusmind
 | `NEXUSMIND_BASE_URL` | `https://nexusmind-backend.fly.dev` | Backend URL (optional, for self-hosting) |
 | `NEXUSMIND_MCP_TOOL_PROFILE` | `essential` | MCP tool profile. Set `only_context` on a context-only deployment (memories, conventions, projects, clients, code search — no tasks, SDD or harness tools). |
 
-Set these in your shell profile or pass them before running Claude Code:
+Only `NEXUSMIND_API_KEY` is required; leave `NEXUSMIND_BASE_URL` unset to use the
+hosted backend.
+
+#### Option 1 (recommended): `~/.claude/settings.json`
+
+```json
+{
+  "env": {
+    "NEXUSMIND_API_KEY": "your-key-here",
+    "NEXUSMIND_BASE_URL": "https://nexusmind.your-company.com",
+    "NEXUSMIND_MCP_TOOL_PROFILE": "only_context"
+  }
+}
+```
+
+Drop the lines you don't need: `NEXUSMIND_BASE_URL` only when self-hosting,
+`NEXUSMIND_MCP_TOOL_PROFILE` only on a context-only deployment (the admin built with
+`VITE_ADMIN_PROFILE=only-context`).
+
+Values set here reach both the MCP server and the hooks, however Claude Code is
+launched (terminal, IDE, desktop app).
+
+#### Option 2: shell profile
 
 ```bash
+# ~/.bashrc, ~/.zshrc, ...
 export NEXUSMIND_API_KEY=your-key-here
-# Context-only deployments (the admin built with VITE_ADMIN_PROFILE=only-context):
-export NEXUSMIND_MCP_TOOL_PROFILE=only_context
+export NEXUSMIND_BASE_URL=https://nexusmind.your-company.com   # optional, self-hosting
+export NEXUSMIND_MCP_TOOL_PROFILE=only_context                 # optional, context-only
 ```
+
+This works only when `claude` is started from a shell that has loaded these
+variables; Claude Code launched from an IDE or the desktop app may not see them.
+
+#### What not to do
+
+- Don't put the key in a repository's `.mcp.json`. The hooks deliberately ignore
+  repository files, so a cloned repo can't redirect your key to a host it chooses.
+- Don't register the server again with `claude mcp add` (see [Install](#install)).
+
+Restart Claude Code after changing these. If the session-start notice
+`NexusMind NOT CONNECTED: NEXUSMIND_API_KEY is not set` no longer appears, the key
+was picked up.
 
 ### Which project a session belongs to
 
